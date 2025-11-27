@@ -13,9 +13,12 @@ class SalesDetailsTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected $token;
+
     public function setUp(): void
     {
         parent::setUp();
+        $this->token = $this->getAuthToken();
         $product = Product::factory()->create(['name' => 'Produto Teste', 'cost_price' => 10, 'sale_price' => 20]);
         InventoryLevel::create(['product_id' => $product->id, 'quantity' => 100]);
         $sale = Sale::create([
@@ -38,10 +41,13 @@ class SalesDetailsTest extends TestCase
     public function test_get_sale_details_returns_full_data()
     {
         $sale = Sale::first();
-        $response = $this->getJson('/api/v1/sales/' . $sale->id);
+        $response = $this->getJson('/api/v1/sales/' . $sale->id, [
+            'Authorization' => 'Bearer ' . $this->token
+        ]);
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'sale_id', 'customer_name', 'transaction_hash', 'total_amount', 'total_profit', 'status', 'created_at', 'items' => [
+                'sale_id', 'customer_name', 'transaction_hash', 'total_amount', 'total_profit', 'status', 'created_at',
+                'items' => [
                     ['product_id', 'product_name', 'quantity', 'unit_price', 'cost_price', 'profit']
                 ]
             ])
@@ -50,7 +56,9 @@ class SalesDetailsTest extends TestCase
 
     public function test_get_sale_details_not_found()
     {
-        $response = $this->getJson('/api/v1/sales/9999');
+        $response = $this->getJson('/api/v1/sales/9999', [
+            'Authorization' => 'Bearer ' . $this->token
+        ]);
         $response->assertStatus(404)
             ->assertJson(['message' => 'Venda não encontrada.']);
     }

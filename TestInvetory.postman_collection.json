@@ -1,0 +1,317 @@
+{
+	"info": {
+		"_postman_id": "ac3e8df9-4a89-46a8-8483-019b9184473c",
+		"name": "TestInvetory",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "2194599"
+	},
+	"item": [
+		{
+			"name": "Save inventory",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"product_id\": \"1\",\n    \"quantity\": 1,\n    \"cost_price\": 12.75\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/api/v1/inventory",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"v1",
+						"inventory"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Load inventory",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"product_id\": \"1\",\n    \"quantity\": 8,\n    \"cost_price\": 30.75\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/api/v1/inventory",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"v1",
+						"inventory"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Save sale",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n    \"transaction_hash\": \"hash-unico-423423\",\n  \"customer_name\": \"Nome do Cliente\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 2,\n      \"unit_price\": 100.00\n    },\n    {\n      \"product_id\": 2,\n      \"quantity\": 1,\n      \"unit_price\": 50.00\n    }\n  ]\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/api/v1/sales",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"v1",
+						"sales"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Load Sale",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/api/v1/sales/5",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"v1",
+						"sales",
+						"5"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Load Sale Report",
+			"protocolProfileBehavior": {
+				"disableBodyPruning": true,
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/api/v1/reports/sales?status=COMPLETED&start_date=2025-01-01&end_date=2025-01-30\"",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"v1",
+						"reports",
+						"sales"
+					],
+					"query": [
+						{
+							"key": "status",
+							"value": "COMPLETED"
+						},
+						{
+							"key": "start_date",
+							"value": "2025-01-01"
+						},
+						{
+							"key": "end_date",
+							"value": "2025-01-30\""
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get Login",
+			"protocolProfileBehavior": {
+				"disabledSystemHeaders": {
+					"accept": true
+				}
+			},
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\"email\": \"test@example.com\", \"password\": \"password\"}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "http://localhost/api/v1/login",
+					"protocol": "http",
+					"host": [
+						"localhost"
+					],
+					"path": [
+						"api",
+						"v1",
+						"login"
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}

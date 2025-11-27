@@ -15,6 +15,7 @@ class InventoryEntryTest extends TestCase
 
     public function test_inventory_entry_success()
     {
+        $token = $this->getAuthToken();
         $product = Product::factory()->create();
         $payload = [
             'product_id' => $product->id,
@@ -22,7 +23,9 @@ class InventoryEntryTest extends TestCase
             'cost_price' => 5.50,
         ];
 
-        $response = $this->postJson('/api/v1/inventory', $payload);
+        $response = $this->postJson('/api/v1/inventory', $payload, [
+            'Authorization' => 'Bearer ' . $token
+        ]);
         $response->assertStatus(201)
             ->assertJsonStructure(['message', 'movement_id']);
 
@@ -40,6 +43,7 @@ class InventoryEntryTest extends TestCase
 
     public function test_inventory_entry_negative_quantity_fails()
     {
+        $token = $this->getAuthToken();
         $product = Product::factory()->create();
         $payload = [
             'product_id' => $product->id,
@@ -47,19 +51,24 @@ class InventoryEntryTest extends TestCase
             'cost_price' => 5.50,
         ];
 
-        $response = $this->postJson('/api/v1/inventory', $payload);
+        $response = $this->postJson('/api/v1/inventory', $payload, [
+            'Authorization' => 'Bearer ' . $token
+        ]);
         $response->assertStatus(422);
     }
 
     public function test_inventory_entry_invalid_product_fails()
     {
+        $token = $this->getAuthToken();
         $payload = [
             'product_id' => 999999,
             'quantity' => 5,
             'cost_price' => 5.50,
         ];
 
-        $response = $this->postJson('/api/v1/inventory', $payload);
+        $response = $this->postJson('/api/v1/inventory', $payload, [
+            'Authorization' => 'Bearer ' . $token
+        ]);
         $response->assertStatus(422);
     }
 }

@@ -1,22 +1,148 @@
 # Controle de Estoque e Vendas - API ERP
 
-## Visão Geral
-API REST desenvolvida em Laravel para controle de estoque e vendas, seguindo requisitos de escalabilidade, concorrência, cache, filas e arquitetura em camadas. O projeto está preparado para rodar em ambiente Docker/Sail, com banco MySQL em produção/desenvolvimento e SQLite em testes automatizados.
+## Descrição
+API RESTful desenvolvida em Laravel para controle de estoque e vendas, preparada para alta escalabilidade, concorrência, cache, filas e arquitetura em camadas. Suporte a ambiente Docker/Sail, banco MySQL em produção/desenvolvimento e SQLite para testes automatizados.
 
-## Estrutura do Projeto
-- **Laravel 10+ / PHP 8.1+**
-- **Banco de dados:** MySQL (produção/dev via Sail), SQLite (testes)
-- **Camadas:**
-  - Controllers
-  - DTOs
-  - Services
-  - Repositories
-  - Models
-- **Testes:** PHPUnit (Feature e Unit)
-- **Factories/Seeders:** Para geração de dados realistas
-- **Cache:** Implementado para consultas de estoque
-- **Filas:** Preparado para jobs assíncronos
-- **Logs:** Detalhados para auditoria e debugging
+---
+
+## Instalação
+
+1. Clone o repositório:
+   ```bash
+   git clone <url-do-repositorio>
+   cd test-api
+   ```
+2. Instale as dependências:
+   ```bash
+   composer install
+   ```
+3. Configure o ambiente:
+   - Copie `.env.example` para `.env` e ajuste as variáveis de banco e fila.
+   - Para Docker/Sail:
+     ```bash
+     ./vendor/bin/sail up -d
+     ```
+4. Execute as migrations e seeders:
+   ```bash
+   ./vendor/bin/sail artisan migrate:fresh --seed
+   ```
+
+---
+
+## Comandos Essenciais
+- Rodar testes:
+  ```bash
+  ./vendor/bin/sail artisan test
+  ```
+- Rodar worker de fila:
+  ```bash
+  ./vendor/bin/sail artisan queue:work redis
+  ```
+- Popular banco com dados realistas:
+  ```bash
+  ./vendor/bin/sail artisan db:seed
+  ```
+
+---
+
+## Como Usar a API
+
+### Autenticação
+A API utiliza Laravel Sanctum. Para obter um token:
+```bash
+curl -X POST http://localhost/api/v1/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "password": "password"}'
+```
+Use o token nas requisições:
+```bash
+-H "Authorization: Bearer SEU_TOKEN_AQUI"
+```
+
+### Endpoints Principais
+- `POST /api/v1/inventory` - Registrar entrada de produtos
+- `GET /api/v1/inventory` - Consultar estoque
+- `POST /api/v1/sales` - Registrar venda
+- `GET /api/v1/sales/{id}` - Detalhes da venda
+- `GET /api/v1/reports/sales` - Relatório de vendas
+
+#### Exemplo de Requisição
+```bash
+curl -X POST http://localhost/api/v1/sales \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "customer_name": "Cliente Teste",
+    "items": [
+      { "product_id": 1, "quantity": 2, "unit_price": 20.00 }
+    ],
+    "transaction_hash": "hash-unico-123"
+  }'
+```
+
+---
+
+## Regras de Negócio
+- Validação automática via DTO
+- Idempotência por `transaction_hash`
+- Processamento assíncrono de vendas
+- Controle de concorrência via transação
+- Cache para consultas de estoque
+- Logs detalhados
+- Eventos de negócio (ex: SaleFinalized)
+
+---
+
+## Modelagem do Banco de Dados (ER)
+- Tabelas principais: `products`, `inventory_levels`, `inventory_movements`, `sales`, `sale_items`, `users`
+- Indices:
+  - `products.sku` (único): Busca rápida por SKU
+  - `inventory_levels.product_id`: Consulta eficiente de estoque
+  - `sales.transaction_hash` (único): Idempotência
+  - `sale_items.sale_id`, `sale_items.product_id`: Relacionamento e performance em relatórios
+- **MySQL**: Usado em produção/desenvolvimento pela robustez, escalabilidade e suporte a índices avançados.
+- **SQLite**: Usado em testes pela leveza e velocidade, sem afetar dados reais.
+
+---
+
+## Estrutura de Pastas
+- `app/Http/Controllers`: Controllers das rotas
+- `app/DTOs`: Validação e padronização de payloads
+- `app/Services`: Lógica de negócio
+- `app/Repositories`: Abstração do acesso a dados
+- `app/Models`: Modelos Eloquent
+- `app/Events`: Eventos de negócio
+- `app/Jobs`: Processamento assíncrono
+- `app/Utils`: Helpers e utilitários
+- `database/factories`: Factories para geração de dados
+- `database/seeders`: Seeders para popular o banco
+- `tests/Feature`: Testes de integração
+- `tests/Unit`: Testes de unidade
+
+**Motivo da Estrutura:**
+- Separação clara de responsabilidades
+- Facilidade de manutenção e testes
+- Escalabilidade para novos módulos
+
+---
+
+## Exemplo de Requisições
+(Ver exemplos acima e na documentação dos endpoints)
+
+---
+
+## Arquivo Postman
+Baixe o arquivo de coleção para testar todos os endpoints:
+[Download TestInvetory.postman_collection.json](./TestInvetory.postman_collection.json)
+
+---
+
+## Observações Finais
+- Testes automatizados garantem integridade das regras
+- Projeto pronto para evoluir e integrar novos módulos
+- Performance otimizada para grande volume de dados
+
+---
 
 ## Endpoints Implementados
 - `POST /api/v1/inventory` - Registrar entrada de produtos no estoque
@@ -284,3 +410,45 @@ php artisan test
 - Seeders/factories para dados realistas
 - Helper de datas para filtros robustos
 - Ajuste de logs e configuração de logging
+
+## Autenticação via API
+
+A API utiliza autenticação via token com Laravel Sanctum.
+
+### Como habilitar autenticação
+1. Instale o pacote Sanctum:
+   ```bash
+   composer require laravel/sanctum
+   ```
+2. Publique a configuração e rode as migrations:
+   ```bash
+   php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
+   php artisan migrate
+   ```
+3. O trait `HasApiTokens` já está no model `User`.
+4. As rotas principais estão protegidas por autenticação (`auth:sanctum`).
+
+### Como obter um token
+Faça login via:
+```bash
+curl -X POST http://localhost/api/v1/login \
+  -H "Content-Type: application/json" \
+  -d '{"email": "test@example.com", "password": "password"}'
+```
+A resposta será:
+```json
+{ "token": "..." }
+```
+Use esse token no header das requisições:
+```bash
+-H "Authorization: Bearer SEU_TOKEN_AQUI"
+```
+
+### Exemplo de chamada autenticada
+```bash
+curl -X GET http://localhost/api/v1/inventory \
+  -H "Authorization: Bearer SEU_TOKEN_AQUI"
+```
+
+---
+````

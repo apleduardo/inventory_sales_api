@@ -13,6 +13,7 @@ class InventorySummaryTest extends TestCase
 
     public function test_inventory_summary_endpoint_returns_correct_structure()
     {
+        $token = $this->getAuthToken();
         $product = Product::factory()->create([
             'cost_price' => 10,
             'sale_price' => 15,
@@ -21,8 +22,9 @@ class InventorySummaryTest extends TestCase
             'product_id' => $product->id,
             'quantity' => 5,
         ]);
-
-        $response = $this->getJson('/api/v1/inventory');
+        $response = $this->getJson('/api/v1/inventory', [
+            'Authorization' => 'Bearer ' . $token
+        ]);
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'inventory' => [

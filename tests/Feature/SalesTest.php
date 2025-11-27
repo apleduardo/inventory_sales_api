@@ -13,9 +13,12 @@ class SalesTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected $token;
+
     public function setUp(): void
     {
         parent::setUp();
+        $this->token = $this->getAuthToken();
         // Cria produto e estoque
         $product = Product::factory()->create(['cost_price' => 10, 'sale_price' => 20]);
         InventoryLevel::create(['product_id' => $product->id, 'quantity' => 100]);
@@ -35,7 +38,9 @@ class SalesTest extends TestCase
                 ]
             ]
         ];
-        $response = $this->postJson('/api/v1/sales', $payload);
+        $response = $this->postJson('/api/v1/sales', $payload, [
+            'Authorization' => 'Bearer ' . $this->token
+        ]);
         $response->assertStatus(202)
             ->assertJsonStructure(['message', 'sale_id', 'transaction_hash']);
         $this->assertDatabaseHas('sales', [
@@ -58,7 +63,9 @@ class SalesTest extends TestCase
                 ]
             ]
         ];
-        $response = $this->postJson('/api/v1/sales', $payload);
+        $response = $this->postJson('/api/v1/sales', $payload, [
+            'Authorization' => 'Bearer ' . $this->token
+        ]);
         $response->assertStatus(202);
         // Simula processamento do job
         $sale = Sale::find($response['sale_id']);
@@ -73,7 +80,9 @@ class SalesTest extends TestCase
             'customer_name' => 'Cliente Teste',
             'items' => []
         ];
-        $response = $this->postJson('/api/v1/sales', $payload);
+        $response = $this->postJson('/api/v1/sales', $payload, [
+            'Authorization' => 'Bearer ' . $this->token
+        ]);
         $response->assertStatus(422)
             ->assertJsonStructure(['message', 'errors']);
     }
@@ -92,8 +101,12 @@ class SalesTest extends TestCase
             ],
             'transaction_hash' => 'hash-teste-123'
         ];
-        $response1 = $this->postJson('/api/v1/sales', $payload);
-        $response2 = $this->postJson('/api/v1/sales', $payload);
+        $response1 = $this->postJson('/api/v1/sales', $payload, [
+            'Authorization' => 'Bearer ' . $this->token
+        ]);
+        $response2 = $this->postJson('/api/v1/sales', $payload, [
+            'Authorization' => 'Bearer ' . $this->token
+        ]);
         $response1->assertStatus(202);
         $response2->assertStatus(200);
         $this->assertEquals($response1['sale_id'], $response2['sale_id']);
