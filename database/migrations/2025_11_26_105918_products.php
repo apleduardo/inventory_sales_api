@@ -26,6 +26,8 @@ return new class extends Migration
                 table: 'products', indexName: 'idx_inventory_levels_product'
             )->onDelete('cascade');
             $table->unsignedBigInteger('quantity')->default(0)->comment('Quantidade atual em estoque');
+            $table->boolean('archived')->default(false)->comment('Sinaliza registros de estoque antigos para arquivamento');
+            $table->index('archived', 'idx_inventory_levels_archived'); // Índice para consultas rápidas
             $table->timestamps();
             $table->index('updated_at', 'idx_inventory_levels_updated_at'); // Índice para auditoria por data
         });

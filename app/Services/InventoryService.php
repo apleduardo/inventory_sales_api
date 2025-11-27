@@ -30,7 +30,7 @@ class InventoryService
     {
         // Cache global do inventário
         return Cache::remember('inventory_summary_global', 60, function () {
-            $levels = \App\Models\InventoryLevel::with('product')->get();
+            $levels = \App\Models\InventoryLevel::with('product')->where('archived', false)->get();
             $summary = $levels->map(function ($level) {
                 $profit = ($level->product->sale_price - $level->product->cost_price) * $level->quantity;
                 return [

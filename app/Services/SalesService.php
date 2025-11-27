@@ -37,7 +37,7 @@ class SalesService
                 if ($product->cost_price === null || $product->sale_price === null) {
                     throw new \Exception('Produto sem preço definido.');
                 }
-                $inventory = InventoryLevel::find($item['product_id']);
+                $inventory = InventoryLevel::where('product_id', $item['product_id'])->where('archived', false)->first();
                 if (!$inventory || $inventory->quantity < $item['quantity']) {
                     throw new \Exception('Estoque insuficiente para o produto: ' . $product->name);
                 }
@@ -65,7 +65,7 @@ class SalesService
             foreach ($items as $item) {
                 SaleItem::create(array_merge($item, ['sale_id' => $sale->id]));
                 // Atualiza estoque
-                $inventory = InventoryLevel::find($item['product_id']);
+                $inventory = InventoryLevel::where('product_id', $item['product_id'])->where('archived', false)->first();
                 $inventory->quantity -= $item['quantity'];
                 $inventory->save();
             }

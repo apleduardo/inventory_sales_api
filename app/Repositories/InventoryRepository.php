@@ -13,7 +13,7 @@ class InventoryRepository
     public function updateStockEntry(int $productId, int $quantity, float $costPrice)
     {
         return DB::transaction(function () use ($productId, $quantity, $costPrice) {
-            $level = InventoryLevel::find($productId);
+            $level = InventoryLevel::where('product_id', $productId)->where('archived', false)->first();
             if ($level) {
                 $level->quantity += $quantity;
                 $level->save();

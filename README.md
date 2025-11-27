@@ -39,6 +39,10 @@ API RESTful desenvolvida em Laravel para controle de estoque e vendas, preparada
   ```bash
   ./vendor/bin/sail artisan db:seed
   ```
+- Executar tarefa agendada para arquivar estoques antigos:
+  ```bash
+  ./vendor/bin/sail artisan inventory:archive-old
+  ```
 
 ---
 
@@ -93,7 +97,7 @@ A modelagem é projetada para normalização e performance de escrita e leitura,
 |-------|-------|-------| 
 | `products` | `id (PK), sku (Unique Index),` |`Informações de produtos. O índice em sku é crucial para buscas rápidas.` | 
 | `inventory_movements` | `id (PK), product_id (Index), movement_type (Index), created_at (Index)` | `Histórico de Movimentação: Registra toda entrada/saída. movement_type ('IN'/'OUT') indexado para consultas .` |
-| `inventory_levels` | `product_id (PK, Unique Index), updated_at (Index)` |`Situação Atual de Estoque: Ajuda na performance do (GET /api/inventory). Isola a atualização da escrita de histórico.` | 
+| `inventory_levels` | `product_id (PK, Unique Index), updated_at (Index), archived (Index)` |`Situação Atual de Estoque: Ajuda na performance do (GET /api/inventory). Isola a atualização da escrita de histórico. O índice em archived garante consultas rápidas apenas para estoques ativos.` | 
 | `sales` | `id (PK), status (Index), transaction_hash (Unique Index, para idempotência), created_at (Index)` |`Registro mestre de vendas. O campo status ('PENDING', 'COMPLETED', 'FAILED') é essencial para o fluxo assíncrono.` | 
 | `sale_items` | `id (PK), sale_id (Index), product_id (Index)` | `Detalhes da venda. O índice composto (sale_id, product_id) e índices separados em sale_id e product_id são cruciais para relatórios e consultas rápidas de vendas.` |
 
@@ -211,6 +215,7 @@ Registra uma venda de produtos. O payload é validado automaticamente via DTO (`
 - Processamento assíncrono via Job na fila Redis
 - Atualização de estoque, registro de itens e status da venda feitos pelo Job
 - Logs detalhados para auditoria
+- Tarefa agendada: Estoques não atualizados há mais de 90 dias são sinalizados automaticamente para arquivamento, garantindo limpeza e performance do banco.
 
 #### Exemplo de uso
 ```bash
@@ -362,6 +367,28 @@ A API de vendas implementa idempotência utilizando o campo `transaction_hash`:
 - Sempre envie o `transaction_hash` em integrações entre sistemas para evitar duplicidade.
 - O backend garante idempotência mesmo se o hash não for enviado, mas o controle é mais robusto se o client gerar e enviar.
 
+## Arquivamento Automático de Estoques Antigos
+
+O sistema possui uma funcionalidade para arquivar ou sinalizar registros de estoque que não foram atualizados nos últimos 90 dias. Isso garante que relatórios e consultas considerem apenas estoques ativos e evita acúmulo de dados obsoletos.
+
+### Como usar
+- Para executar manualmente:
+  ```bash
+  ./vendor/bin/sail artisan inventory:archive-old
+  ```
+  O comando irá sinalizar como arquivados todos os registros de estoque com `updated_at` anterior a 90 dias.
+- Para agendar automaticamente:
+  O comando já está configurado para rodar diariamente pelo scheduler do Laravel. Basta garantir que o scheduler está ativo:
+  ```bash
+  ./vendor/bin/sail artisan schedule:work
+  ```
+
+### Consultas e relatórios
+- Todas as consultas de estoque e vendas já desconsideram registros arquivados.
+- O campo `archived` pode ser usado para auditoria ou reativação futura.
+
+---
+
 ## Observações
 - O código está compatível tanto com MySQL quanto SQLite.
 - Os testes automatizados garantem integridade das principais regras de negócio.
@@ -415,6 +442,10 @@ A API utiliza autenticação via token com Laravel Sanctum. Veja o exemplo de lo
  - Adicionar verificação de autorização para liberar rotas especificas de acordo com a permissão dos usuarios.
  - Ratelimit para evitar DDOS.
  - Alteração do sitema de gerenciamento de fila para o RabbitMQ, isso traz a vantagem de confiabilidade diminuindo o risco da perda de mensagens.
+ - Para escalar o banco de dados adicionaria replicas de leitura e escrita e particionamento dos dados de vendas.
+ - Autoscaling grouping para gerenciamento de escalabildade.
+ - Loadbalance para balancear a carga entre as instancias.
+ - Implementada tarefa agendada para arquivar/sinalizar estoques não atualizados há mais de 90 dias.
 ---
 
 

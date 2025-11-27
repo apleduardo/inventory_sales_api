@@ -16,6 +16,7 @@ class InventoryLevel extends Model
     protected $fillable = [
         'product_id',
         'quantity',
+        'archived',
     ];
 
     public function product()
