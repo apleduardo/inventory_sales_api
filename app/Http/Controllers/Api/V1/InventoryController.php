@@ -1,0 +1,55 @@
+<?php
+
+namespace App\Http\Controllers\Api\V1;
+
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use App\DTOs\InventoryEntryDTO;
+use App\Services\InventoryService;
+use Illuminate\Support\Facades\Log;
+
+class InventoryController extends Controller
+{    
+    protected $inventoryService;
+
+    public function __construct(InventoryService $inventoryService)
+    {
+        $this->inventoryService = $inventoryService;
+    }
+    
+    public function index()
+    {
+        return response()->json(['message' => 'Inventory API is working!']);
+    }
+
+    public function store(InventoryEntryDTO $data, Request $request)
+    {
+        try {
+
+            Log::info('API_REQUEST_RECEIVED', [
+                'event' => 'API_REQUEST_RECEIVED',
+                'endpoint' => $request->path(),
+                'method' => $request->method(), 
+                'validated_data' => $data->toArray(),
+                'ip_address' => $request->ip(),
+                'user_id' => auth()->check() ? auth()->id() : 'guest',
+                'request_time' => now()->toDateTimeString(),
+            ]);
+
+            $movement = $this->inventoryService->registerEntry(
+                $data->product_id, 
+                $data->quantity, 
+                $data->cost_price
+            );
+
+            return response()->json([
+                'message' => 'Entrada de estoque registrada com sucesso.',
+                'movement_id' => $movement->id
+            ], 201);
+
+        } catch (\Exception $e) {
+            // In a real system, you would log the error here
+            return response()->json(['message' => 'Falha ao registrar entrada.', 'error' => $e->getMessage()], 500);
+        }
+     }
+}
