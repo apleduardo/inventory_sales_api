@@ -1,20 +1,17 @@
 # Controle de Estoque e Vendas - API ERP
 
-## Descrição
 API RESTful desenvolvida em Laravel para controle de estoque e vendas, preparada para alta escalabilidade, concorrência, cache, filas e arquitetura em camadas. Suporte a ambiente Docker/Sail, banco MySQL em produção/desenvolvimento e SQLite para testes automatizados.
-
----
 
 ## Instalação
 
 1. Clone o repositório:
    ```bash
-   git clone <url-do-repositorio>
-   cd test-api
+   git clone https://github.com/apleduardo/inventory_sales_api
+   cd inventory_sales_api
    ```
 2. Instale as dependências:
    ```bash
-   composer install
+   ./vendor/bin/sail composer install
    ```
 3. Configure o ambiente:
    - Copie `.env.example` para `.env` e ajuste as variáveis de banco e fila.
@@ -48,13 +45,17 @@ API RESTful desenvolvida em Laravel para controle de estoque e vendas, preparada
 ## Como Usar a API
 
 ### Autenticação
-A API utiliza Laravel Sanctum. Para obter um token:
+A API utiliza Laravel Sanctum. Para acessar os endpoints protegidos, obtenha um token realizando login:
 ```bash
 curl -X POST http://localhost/api/v1/login \
   -H "Content-Type: application/json" \
   -d '{"email": "test@example.com", "password": "password"}'
 ```
-Use o token nas requisições:
+A resposta será:
+```json
+{ "token": "..." }
+```
+Utilize o token nas requisições:
 ```bash
 -H "Authorization: Bearer SEU_TOKEN_AQUI"
 ```
@@ -82,65 +83,93 @@ curl -X POST http://localhost/api/v1/sales \
 
 ---
 
-## Regras de Negócio
-- Validação automática via DTO
-- Idempotência por `transaction_hash`
-- Processamento assíncrono de vendas
-- Controle de concorrência via transação
-- Cache para consultas de estoque
-- Logs detalhados
-- Eventos de negócio (ex: SaleFinalized)
-
----
-
 ## Modelagem do Banco de Dados (ER)
-- Tabelas principais: `products`, `inventory_levels`, `inventory_movements`, `sales`, `sale_items`, `users`
-- Indices:
-  - `products.sku` (único): Busca rápida por SKU
-  - `inventory_levels.product_id`: Consulta eficiente de estoque
-  - `sales.transaction_hash` (único): Idempotência
-  - `sale_items.sale_id`, `sale_items.product_id`: Relacionamento e performance em relatórios
-- **MySQL**: Usado em produção/desenvolvimento pela robustez, escalabilidade e suporte a índices avançados.
+
+A modelagem é projetada para normalização e performance de escrita e leitura, especialmente para o controle de estoque e relatórios.
+
+### Estrutura de tabelas: 
+
+| Tabela | Indices  | Propósito e Justificativa|
+|-------|-------|-------| 
+| `products` | `id (PK), sku (Unique Index),` |`Informações de produtos. O índice em sku é crucial para buscas rápidas.` | 
+| `inventory_movements` | `id (PK), product_id (Index), movement_type (Index), created_at (Index)` | `Histórico de Movimentação: Registra toda entrada/saída. movement_type ('IN'/'OUT') indexado para consultas .` |
+| `inventory_levels` | `product_id (PK, Unique Index), updated_at (Index)` |`Situação Atual de Estoque: Ajuda na performance do (GET /api/inventory). Isola a atualização da escrita de histórico.` | 
+| `sales` | `id (PK), status (Index), transaction_hash (Unique Index, para idempotência), created_at (Index)` |`Registro mestre de vendas. O campo status ('PENDING', 'COMPLETED', 'FAILED') é essencial para o fluxo assíncrono.` | 
+| `sale_items` | `id (PK), sale_id (Index), product_id (Index)` | `Detalhes da venda. O índice composto (sale_id, product_id) e índices separados em sale_id e product_id são cruciais para relatórios e consultas rápidas de vendas.` |
+
+- **MySQL**: RDBMS com propriedades ACID. A escolha é pela funcionalidade de relacionamento e alta consistência devido as transações. Suporte a índices avançados.
 - **SQLite**: Usado em testes pela leveza e velocidade, sem afetar dados reais.
 
+```
+erDiagram
+    products ||--o{ inventory_movements : has
+    products ||--|| inventory_levels : has
+    sales ||--o{ sale_items : has
+    products ||--o{ sale_items : includes
+
+    products {
+        int id PK
+        varchar sku UK "Chave p/ busca rápida"
+        varchar name
+        decimal cost_price
+        decimal sale_price
+    }
+
+    inventory_movements {
+        int id PK
+        int product_id FK
+        enum movement_type "IN, OUT"
+        int quantity
+        decimal cost_price
+        datetime created_at
+    }
+
+    inventory_levels {
+        int product_id PK FK "Chave p/ concorrência e leitura"
+        int quantity "Valor atual"
+        decimal total_cost
+        datetime updated_at "Para tarefa agendada"
+    }
+
+    sales {
+        int id PK
+        varchar customer_name
+        decimal total_amount
+        decimal total_profit
+        enum status "PENDING, COMPLETED, FAILED"
+        varchar transaction_hash UK "Garantir idempotência"
+        datetime created_at
+    }
+
+    sale_items {
+        int id PK
+        int sale_id FK
+        int product_id FK
+        int quantity
+        decimal unit_price
+        decimal cost_price
+        decimal profit
+    }
+```
 ---
 
-## Estrutura de Pastas
-- `app/Http/Controllers`: Controllers das rotas
-- `app/DTOs`: Validação e padronização de payloads
-- `app/Services`: Lógica de negócio
-- `app/Repositories`: Abstração do acesso a dados
+## Camadas e Responsabilidades
+- `Controllers`: Receber requisição HTTP, validar (usando Request Objects ou DTOs), chamar o Service apropriado e retornar a resposta. Não contém lógica de negócio.
+- `DTOs`: Tipagem forte e validação dos dados de entrada antes de passar para o Service. Garante a forma correta dos dados.
+- `Services`: Lógica de Negócio Central: Orquestra a execução das regras de negócio, manipula transações, dispara eventos e utiliza os Repositories. Ex: SalesService calcula lucro, verifica estoque e chama o SaleRepository para persistir.
+- `Repositories`: Abstrai o acesso a dados. Responsável por interagir com os modelos Eloquent, aplicar otimizações N+1, gerenciar cache e lidar com bloqueios (concorrência).
 - `app/Models`: Modelos Eloquent
 - `app/Events`: Eventos de negócio
-- `app/Jobs`: Processamento assíncrono
-- `app/Utils`: Helpers e utilitários
-- `database/factories`: Factories para geração de dados
-- `database/seeders`: Seeders para popular o banco
-- `tests/Feature`: Testes de integração
-- `tests/Unit`: Testes de unidade
+- `app/Jobs`: Execução assíncrona de tarefas demoradas ou que podem falhar temporariamente (e serem re-tentadas), como o processamento completo de uma venda.
 
 **Motivo da Estrutura:**
-- Separação clara de responsabilidades
-- Facilidade de manutenção e testes
-- Escalabilidade para novos módulos
-
----
-
-## Exemplo de Requisições
-(Ver exemplos acima e na documentação dos endpoints)
+ Arquitetura Controller-Service-Repository (CSR), que é um padrão robusto para modularização, isolamento de lógica de negócio e facilidade de testes.
 
 ---
 
 ## Arquivo Postman
 Baixe o arquivo de coleção para testar todos os endpoints:
 [Download TestInvetory.postman_collection.json](./TestInvetory.postman_collection.json)
-
----
-
-## Observações Finais
-- Testes automatizados garantem integridade das regras
-- Projeto pronto para evoluir e integrar novos módulos
-- Performance otimizada para grande volume de dados
 
 ---
 
@@ -291,7 +320,7 @@ O projeto utiliza o Redis como driver de fila para processamento assíncrono das
 Execute o comando abaixo para iniciar o processamento dos jobs:
 
 ```
-php artisan queue:work redis
+./vendor/bin/sail artisan queue:work redis
 ```
 
 ### Configuração
@@ -333,23 +362,6 @@ A API de vendas implementa idempotência utilizando o campo `transaction_hash`:
 - Sempre envie o `transaction_hash` em integrações entre sistemas para evitar duplicidade.
 - O backend garante idempotência mesmo se o hash não for enviado, mas o controle é mais robusto se o client gerar e enviar.
 
-## Como rodar
-1. Suba o ambiente com Sail:
-   ```bash
-   ./vendor/bin/sail up -d
-   ```
-2. Execute as migrations e seeders:
-   ```bash
-   ./vendor/bin/sail artisan migrate:fresh --seed
-   ```
-3. Rode os testes:
-   ```bash
-   ./vendor/bin/sail artisan test
-   ```
-4. Teste a API via Postman ou similar:
-   - Endpoint: `POST /api/v1/inventory`
-   - Endpoint: `GET /api/v1/inventory`
-
 ## Observações
 - O código está compatível tanto com MySQL quanto SQLite.
 - Os testes automatizados garantem integridade das principais regras de negócio.
@@ -373,82 +385,36 @@ Para simular ambiente de produção/teste com grande volume de dados:
 
 1. Certifique-se que o banco está migrado:
    ```bash
-   php artisan migrate
+   ./vendor/bin/sail artisan migrate
    ```
 2. Execute o seeder principal:
    ```bash
-   php artisan db:seed
+   ./vendor/bin/sail artisan db:seed
    ```
    Isso irá rodar o `RealisticDataSeeder` automaticamente.
 
 > **Dica:** O seeder foi projetado para ser eficiente, mas pode demorar alguns minutos dependendo do ambiente. Para testar com menos dados, ajuste os valores em `database/seeders/RealisticDataSeeder.php`.
 
-## Factories e Seeders
-- `ProductFactory`, `SaleFactory`, `SaleItemFactory` para geração rápida e variada de dados
-- `RealisticDataSeeder` para simulação de ambiente realista
-
-## Observações de Performance
-- Queries e relatórios otimizados para grande volume
-- Uso de cache, eager loading e paginação recomendados para produção
-- Testes automatizados simulam cenários de concorrência e volume
-
-## Como rodar testes
-```bash
-php artisan test
-```
-
-## Como rodar em ambiente Docker/Sail
-```bash
-./vendor/bin/sail up -d
-./vendor/bin/sail artisan migrate --seed
-```
-
 ---
-
-**Últimas implementações:**
-- Evento `SaleFinalized` disparado ao finalizar venda
-- Seeders/factories para dados realistas
-- Helper de datas para filtros robustos
-- Ajuste de logs e configuração de logging
 
 ## Autenticação via API
 
-A API utiliza autenticação via token com Laravel Sanctum.
-
-### Como habilitar autenticação
-1. Instale o pacote Sanctum:
-   ```bash
-   composer require laravel/sanctum
-   ```
-2. Publique a configuração e rode as migrations:
-   ```bash
-   php artisan vendor:publish --provider="Laravel\Sanctum\SanctumServiceProvider"
-   php artisan migrate
-   ```
-3. O trait `HasApiTokens` já está no model `User`.
-4. As rotas principais estão protegidas por autenticação (`auth:sanctum`).
-
-### Como obter um token
-Faça login via:
-```bash
-curl -X POST http://localhost/api/v1/login \
-  -H "Content-Type: application/json" \
-  -d '{"email": "test@example.com", "password": "password"}'
-```
-A resposta será:
-```json
-{ "token": "..." }
-```
-Use esse token no header das requisições:
-```bash
--H "Authorization: Bearer SEU_TOKEN_AQUI"
-```
-
-### Exemplo de chamada autenticada
-```bash
-curl -X GET http://localhost/api/v1/inventory \
-  -H "Authorization: Bearer SEU_TOKEN_AQUI"
-```
+A API utiliza autenticação via token com Laravel Sanctum. Veja o exemplo de login e uso do token na seção [Como Usar a API](#como-usar-a-api).
 
 ---
-````
+
+## Observações Finais
+- Testes automatizados garantem integridade das regras e simulam cenários de concorrência 
+- Projeto pronto para evoluir e integrar novos módulos
+- Queries e relatórios otimizados para grande volume
+
+## Melhorias Futuras
+ - Desacoplamento do processamento da fila para uma nova aplicação, isso garantiria a escalabilidade de forma apartada.
+ - Paginação do relatorio.
+ - No projeto foi usado um modelo de autenticação basica, para o futuro seria interessante em pensar em um modelo mais robusto como protocolo OAUTH ou JWT.
+ - Adicionar verificação de autorização para liberar rotas especificas de acordo com a permissão dos usuarios.
+ - Ratelimit para evitar DDOS.
+ - Alteração do sitema de gerenciamento de fila para o RabbitMQ, isso traz a vantagem de confiabilidade diminuindo o risco da perda de mensagens.
+---
+
+
