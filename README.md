@@ -229,6 +229,58 @@ A API de vendas implementa idempotência utilizando o campo `transaction_hash`:
 - Os testes automatizados garantem integridade das principais regras de negócio.
 - O projeto está pronto para evoluir para os demais endpoints e regras solicitadas.
 
+## Eventos de Negócio
+
+- **SaleFinalized**: Evento disparado automaticamente sempre que uma venda é finalizada (status COMPLETED). Pode ser utilizado para integrações, notificações ou auditoria. Implementado em `app/Events/SaleFinalized.php` e disparado pelo `SalesService`.
+
+## Popular Banco de Dados com Dados Realistas
+
+Para simular ambiente de produção/teste com grande volume de dados:
+
+- **Seeders e Factories eficientes** geram:
+  - 100 produtos diferentes
+  - Estoque inicial para todos os produtos
+  - 10.000 vendas históricas distribuídas nos últimos 12 meses
+  - Média de 2-5 itens por venda (20.000 a 50.000 registros)
+
+### Como popular o banco
+
+1. Certifique-se que o banco está migrado:
+   ```bash
+   php artisan migrate
+   ```
+2. Execute o seeder principal:
+   ```bash
+   php artisan db:seed
+   ```
+   Isso irá rodar o `RealisticDataSeeder` automaticamente.
+
+> **Dica:** O seeder foi projetado para ser eficiente, mas pode demorar alguns minutos dependendo do ambiente. Para testar com menos dados, ajuste os valores em `database/seeders/RealisticDataSeeder.php`.
+
+## Factories e Seeders
+- `ProductFactory`, `SaleFactory`, `SaleItemFactory` para geração rápida e variada de dados
+- `RealisticDataSeeder` para simulação de ambiente realista
+
+## Observações de Performance
+- Queries e relatórios otimizados para grande volume
+- Uso de cache, eager loading e paginação recomendados para produção
+- Testes automatizados simulam cenários de concorrência e volume
+
+## Como rodar testes
+```bash
+php artisan test
+```
+
+## Como rodar em ambiente Docker/Sail
+```bash
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan migrate --seed
+```
+
 ---
 
-**Para dúvidas ou evolução do projeto, consulte este README ou os comentários nos arquivos principais.**
+**Últimas implementações:**
+- Evento `SaleFinalized` disparado ao finalizar venda
+- Seeders/factories para dados realistas
+- Helper de datas para filtros robustos
+- Ajuste de logs e configuração de logging
