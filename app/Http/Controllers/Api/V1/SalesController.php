@@ -59,4 +59,17 @@ class SalesController extends Controller
             return response()->json(['message' => 'Falha ao registrar venda.', 'error' => $e->getMessage()], 500);
         }
     }
+
+    /**
+     * GET /api/v1/sales/{id}
+     * Retorna os detalhes completos de uma venda específica.
+     */
+    public function show($id)
+    {
+        $sale = $this->salesService->getSaleDetails($id);
+        if (!$sale) {
+            return response()->json(['message' => 'Venda não encontrada.'], 404);
+        }
+        return response()->json($sale);
+    }
 }

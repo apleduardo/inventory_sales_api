@@ -8,4 +8,6 @@ Route::prefix('v1')->group(function () {
     Route::post('/inventory', [InventoryController::class, 'store']);
     Route::get('/inventory', [InventoryController::class, 'index']);
     Route::post('/sales', [SalesController::class, 'store']);
+    // Endpoint para obter detalhes de uma venda específica
+    Route::get('/sales/{id}', [SalesController::class, 'show']);
 });

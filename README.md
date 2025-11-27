@@ -22,6 +22,7 @@ API REST desenvolvida em Laravel para controle de estoque e vendas, seguindo req
 - `POST /api/v1/inventory` - Registrar entrada de produtos no estoque
 - `GET /api/v1/inventory` - Obter situação atual do estoque (otimizado, cacheado, com valores totais e lucro projetado)
 - `POST /api/v1/sales` - Registrar venda de produtos (idempotente, processamento assíncrono, validação automática via DTO)
+- `GET /api/v1/sales/{id}` - Obter detalhes completos de uma venda específica (itens, status, valores, idempotência)
 
 ## Endpoint de Vendas
 
@@ -67,6 +68,41 @@ curl -X POST http://localhost/api/v1/sales \
     "transaction_hash": "hash-unico-123"
   }'
 ```
+
+### `GET /api/v1/sales/{id}`
+Retorna os detalhes completos de uma venda específica, incluindo todos os itens, valores, status e informações do produto.
+
+#### Resposta
+```json
+{
+  "sale_id": 1,
+  "customer_name": "Cliente Teste",
+  "transaction_hash": "hash-unico-123",
+  "total_amount": 40.00,
+  "total_profit": 20.00,
+  "status": "COMPLETED",
+  "created_at": "2025-11-27T10:00:00Z",
+  "items": [
+    {
+      "product_id": 1,
+      "product_name": "Produto Teste",
+      "quantity": 2,
+      "unit_price": 20.00,
+      "cost_price": 10.00,
+      "profit": 20.00
+    }
+  ]
+}
+```
+
+#### Regras de Negócio
+- Retorna 404 se a venda não existir
+- Eager loading dos itens e produtos
+- Estrutura padronizada para integrações e relatórios
+
+#### Testes automatizados
+- Testa retorno completo dos dados da venda
+- Testa resposta 404 para venda inexistente
 
 ## Funcionalidades e Regras de Negócio
 - Registro de entrada de produtos no estoque

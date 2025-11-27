@@ -8,9 +8,17 @@ use App\Models\Sale;
 use App\Models\SaleItem;
 use App\Models\InventoryLevel;
 use App\Models\Product;
+use App\Repositories\SalesRepository;
 
 class SalesService
 {
+    protected $salesRepository;
+
+    public function __construct(SalesRepository $salesRepository)
+    {
+        $this->salesRepository = $salesRepository;
+    }
+
     public function registerSale(array $data)
     {
         // Validação básica
@@ -50,7 +58,7 @@ class SalesService
                 'transaction_hash' => md5(json_encode($data) . microtime()),
                 'total_amount' => $totalAmount,
                 'total_profit' => $totalProfit,
-                'status' => 'COMPLETED',
+                'status' => Sale::STATUS_COMPLETED,
             ]);
 
             foreach ($items as $item) {
@@ -78,7 +86,15 @@ class SalesService
             'transaction_hash' => $transactionHash,
             'total_amount' => 0,
             'total_profit' => 0,
-            'status' => 'PENDING',
+            'status' => Sale::STATUS_PENDING,
         ]);
+    }
+
+    /**
+     * Retorna os detalhes completos de uma venda específica, incluindo itens e produto.
+     */
+    public function getSaleDetails($id)
+    {
+        return $this->salesRepository->findSaleWithItems($id);
     }
 }
