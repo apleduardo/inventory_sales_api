@@ -19,7 +19,8 @@ class InventoryController extends Controller
     
     public function index()
     {
-        return response()->json(['message' => 'Inventory API is working!']);
+        $summary = $this->inventoryService->getInventorySummary();
+        return response()->json($summary);
     }
 
     public function store(InventoryEntryDTO $data, Request $request)

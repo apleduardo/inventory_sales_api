@@ -37,6 +37,7 @@ class InventoryRepositoryTest extends TestCase
         $product = Product::factory()->create();
         $repo = new InventoryRepository();
         $repo->updateStockEntry($product->id, 10, 5.00);
+        sleep(1); // Garante que o created_at será diferente
         $repo->updateStockEntry($product->id, 5, 5.00);
 
         $this->assertDatabaseHas('inventory_levels', [
