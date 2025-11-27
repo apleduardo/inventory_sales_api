@@ -42,44 +42,6 @@ return new class extends Migration
             $table->timestamp('created_at')->index(); // Índice para auditoria por data
             $table->unique(['product_id', 'created_at'], 'movement_unique_per_second'); // Proteção extra contra duplicidade no mesmo produto/segundo
         });
-
-        Schema::create('sales', function (Blueprint $table) {
-            $table->id();
-            $table->string('customer_name')->nullable();
-            
-            // Campo crucial para Idempotência. Deve ser único.
-            $table->string('transaction_hash', 64)->unique()->comment('Hash para garantir idempotência do Job.');
-            
-            $table->decimal('total_amount', 10, 4)->comment('Valor total da venda.');
-            $table->decimal('total_profit', 10, 4)->comment('Lucro total calculado.');
-            
-            // Status para o fluxo assíncrono
-            $table->string('status')->default('PENDING')->index()->comment('PENDING, COMPLETED, FAILED');
-            
-            $table->timestamp('created_at')->index(); // Índice para relatórios por período
-            $table->timestamp('updated_at')->nullable();
-        });
-
-        Schema::create('sale_items', function (Blueprint $table) {
-            $table->id();
-            
-            $table->foreignId('sale_id')->constrained('sales')->onDelete('cascade');
-            $table->foreignId('product_id')->constrained('products');
-            
-            $table->unsignedInteger('quantity');
-            $table->decimal('unit_price', 10, 2)->comment('Preço de venda unitário no momento da transação.');
-            $table->decimal('cost_price', 10, 2)->comment('Custo unitário no momento da transação.');
-            $table->decimal('profit', 10, 2)->comment('Lucro total da linha de item.');
-            
-            // 1. Índice no sale_id (FK é opcional, mas garante performance)
-            $table->index('sale_id', 'idx_sale_items_sale_id');
-            
-            // 2. Índice no product_id (Crucial para relatórios)
-            $table->index('product_id', 'idx_sale_items_product_id'); 
-            
-            // 3. Índice Composto (Otimização de buscas)
-            $table->index(['sale_id', 'product_id'], 'idx_sale_items_sale_product_compound');
-        });
     }
         
     /**
@@ -87,10 +49,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('products');
         Schema::dropIfExists('inventory_levels');
         Schema::dropIfExists('inventory_movements');
-        Schema::dropIfExists('sales');
-        Schema::dropIfExists('sale_items');
+        Schema::dropIfExists('products');
     }
 };
