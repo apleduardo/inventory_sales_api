@@ -9,6 +9,7 @@ use App\Models\SaleItem;
 use App\Models\InventoryLevel;
 use App\Models\Product;
 use App\Repositories\SalesRepository;
+use App\Events\SaleFinalized;
 
 class SalesService
 {
@@ -74,6 +75,8 @@ class SalesService
                 'total_amount' => $totalAmount,
                 'total_profit' => $totalProfit,
             ]);
+
+            event(new SaleFinalized($sale));
 
             return $sale;
         });
