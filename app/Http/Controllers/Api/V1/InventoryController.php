@@ -25,6 +25,10 @@ class InventoryController extends Controller
     public function store(InventoryEntryDTO $data, Request $request)
     {
         try {
+            Log::info('INVENTORY_DEBUG', [
+                'data' => $data->toArray(),
+                'request' => $request->all(),
+            ]);
 
             Log::info('API_REQUEST_RECEIVED', [
                 'event' => 'API_REQUEST_RECEIVED',
@@ -48,7 +52,10 @@ class InventoryController extends Controller
             ], 201);
 
         } catch (\Exception $e) {
-            // In a real system, you would log the error here
+            Log::error('INVENTORY_ERROR', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
             return response()->json(['message' => 'Falha ao registrar entrada.', 'error' => $e->getMessage()], 500);
         }
      }
