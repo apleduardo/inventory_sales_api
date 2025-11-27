@@ -54,7 +54,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['daily', 'sqldebug'], 
+            'channels' => ['daily'], 
             'ignore_exceptions' => false,
         ],
 
@@ -72,13 +72,6 @@ return [
             'days' => env('LOG_DAILY_DAYS', 14),
             'replace_placeholders' => true,
             'max_files' => 30,
-        ],
-
-        'sqldebug' => [
-            'driver' => 'daily',
-            'path' => storage_path('logs/sqldebug.log'),
-            'level' => env('LOG_LEVEL', 'debug'),
-            'days' => 7,
         ],
 
         'slack' => [

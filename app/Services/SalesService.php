@@ -97,4 +97,12 @@ class SalesService
     {
         return $this->salesRepository->findSaleWithItems($id);
     }
+
+    /**
+     * Gera relatório de vendas com filtros opcionais: data inicial, data final, status, cliente.
+     */
+    public function getSalesReport(array $filters)
+    {
+        return $this->salesRepository->getSalesReport($filters);
+    }
 }

@@ -23,6 +23,7 @@ API REST desenvolvida em Laravel para controle de estoque e vendas, seguindo req
 - `GET /api/v1/inventory` - Obter situação atual do estoque (otimizado, cacheado, com valores totais e lucro projetado)
 - `POST /api/v1/sales` - Registrar venda de produtos (idempotente, processamento assíncrono, validação automática via DTO)
 - `GET /api/v1/sales/{id}` - Obter detalhes completos de uma venda específica (itens, status, valores, idempotência)
+- `GET /api/v1/reports/sales` - Gerar relatório de vendas com filtros (data, status, cliente)
 
 ## Endpoint de Vendas
 
@@ -103,6 +104,27 @@ Retorna os detalhes completos de uma venda específica, incluindo todos os itens
 #### Testes automatizados
 - Testa retorno completo dos dados da venda
 - Testa resposta 404 para venda inexistente
+
+### `GET /api/v1/reports/sales`
+Gera relatório de vendas com filtros opcionais:
+- `start_date` (YYYY-MM-DD)
+- `end_date` (YYYY-MM-DD)
+- `status` (COMPLETED, FAILED, PENDING)
+- `customer_name` (busca parcial)
+
+#### Exemplo de uso
+```bash
+curl -X GET "http://localhost/api/v1/reports/sales?status=COMPLETED&start_date=2025-11-01&end_date=2025-11-27"
+```
+
+#### Resposta
+Array de vendas, cada uma com todos os dados, itens e produtos.
+
+#### Testes automatizados
+- Testa retorno de todas as vendas
+- Testa filtro por status
+- Testa filtro por cliente
+- Testa filtro por data
 
 ## Funcionalidades e Regras de Negócio
 - Registro de entrada de produtos no estoque

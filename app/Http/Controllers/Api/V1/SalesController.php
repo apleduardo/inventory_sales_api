@@ -72,4 +72,21 @@ class SalesController extends Controller
         }
         return response()->json($sale);
     }
+
+    /**
+     * GET /api/v1/reports/sales
+     * Gera relatório de vendas com filtros opcionais: data inicial, data final, status, cliente.
+     * Exemplo de uso: /api/v1/reports/sales?start_date=2025-11-01&end_date=2025-11-27&status=COMPLETED&customer_name=João
+     */
+    public function report(Request $request)
+    {
+        $filters = [
+            'start_date' => $request->query('start_date'),
+            'end_date' => $request->query('end_date'),
+            'status' => $request->query('status'),
+            'customer_name' => $request->query('customer_name'),
+        ];
+        $report = $this->salesService->getSalesReport($filters);
+        return response()->json($report);
+    }
 }

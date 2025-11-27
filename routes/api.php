@@ -10,4 +10,6 @@ Route::prefix('v1')->group(function () {
     Route::post('/sales', [SalesController::class, 'store']);
     // Endpoint para obter detalhes de uma venda específica
     Route::get('/sales/{id}', [SalesController::class, 'show']);
+    // Endpoint para relatório de vendas com filtros
+    Route::get('/reports/sales', [SalesController::class, 'report']);
 });
