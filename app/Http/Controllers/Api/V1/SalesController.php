@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Log;
 use App\DTOs\SalesEntryDTO;
 use Illuminate\Validation\ValidationException;
 use App\Utils\TransactionHashGenerator;
+use App\Exceptions\SaleAlreadyRegisteredException;
 
 class SalesController extends Controller
 {
@@ -26,31 +27,24 @@ class SalesController extends Controller
                 'customer_name' => $dto->customer_name,
                 'items' => $dto->items
             ];
-            $transactionHash = $request->input('transaction_hash') ?? TransactionHashGenerator::generate($data);
-            Log::info('SALES_REQUEST_RECEIVED', [
-                'endpoint' => $request->path(),
-                'method' => $request->method(),
-                'data' => $data,
-                'ip_address' => $request->ip(),
-                'user_id' => auth()->check() ? auth()->id() : 'guest',
-                'request_time' => now()->toDateTimeString(),
-                'transaction_hash' => $transactionHash,
-            ]);
-            $existing = \App\Models\Sale::where('transaction_hash', $transactionHash)->first();
-            if ($existing) {
-                return response()->json([
-                    'message' => 'Venda já registrada para este hash.',
-                    'sale_id' => $existing->id,
-                    'transaction_hash' => $transactionHash
-                ], 200);
-            }
-            $sale = $this->salesService->createPendingSale($data, $transactionHash);
-            \App\Jobs\ProcessSaleJob::dispatch($sale->id, $data);
+            $transactionHash = $request->input('transaction_hash');
+            $sale = $this->salesService->processSaleRequest($data, $transactionHash);
             return response()->json([
                 'message' => 'Venda recebida e será processada.',
                 'sale_id' => $sale->id,
-                'transaction_hash' => $transactionHash
+                'transaction_hash' => $sale->transaction_hash
             ], 202);
+        } catch (SaleAlreadyRegisteredException $e) {
+            return response()->json([
+                'message' => 'Venda já registrada para este hash.',
+                'sale_id' => $e->getSale()->id,
+                'transaction_hash' => $e->getSale()->transaction_hash
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Erro de validação.',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             Log::error('SALES_ERROR', [
                 'error' => $e->getMessage(),

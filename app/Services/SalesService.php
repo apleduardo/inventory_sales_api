@@ -10,6 +10,7 @@ use App\Models\InventoryLevel;
 use App\Models\Product;
 use App\Repositories\SalesRepository;
 use App\Events\SaleFinalized;
+use App\Exceptions\SaleAlreadyRegisteredException;
 
 class SalesService
 {
@@ -91,6 +92,42 @@ class SalesService
             'total_profit' => 0,
             'status' => Sale::STATUS_PENDING,
         ]);
+    }
+
+    /**
+     * Fluxo principal de registro de venda pendente e disparo do job, com idempotência.
+     */
+    public function processSaleRequest(array $data, ?string $transactionHash = null)
+    {
+        // Gera ou valida o hash
+        if (!$transactionHash) {
+            $transactionHash = \App\Utils\TransactionHashGenerator::generate($data);
+            \Log::info('TRANSACTION_HASH_GENERATED', [
+                'data' => $data,
+                'transaction_hash' => $transactionHash,
+            ]);
+        }
+        // Idempotência: verifica se já existe venda para o hash
+        $existing = \App\Models\Sale::where('transaction_hash', $transactionHash)->first();
+        if ($existing) {
+            \Log::info('SALE_IDEMPOTENT_RETURN', [
+                'transaction_hash' => $transactionHash,
+                'sale_id' => $existing->id,
+            ]);
+            throw new SaleAlreadyRegisteredException($existing);
+        }
+        // Cria venda pendente
+        $sale = $this->createPendingSale($data, $transactionHash);
+        \Log::info('SALE_PENDING_CREATED', [
+            'sale_id' => $sale->id,
+            'transaction_hash' => $transactionHash,
+        ]);
+        \App\Jobs\ProcessSaleJob::dispatch($sale->id, $data);
+        \Log::info('SALE_JOB_DISPATCHED', [
+            'sale_id' => $sale->id,
+            'transaction_hash' => $transactionHash,
+        ]);
+        return $sale;
     }
 
     /**

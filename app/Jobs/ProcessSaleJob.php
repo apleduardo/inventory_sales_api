@@ -31,14 +31,14 @@ class ProcessSaleJob implements ShouldQueue
     {
         $sale = Sale::find($this->saleId);
         if (!$sale || $sale->status !== Sale::STATUS_PENDING) {
-            Log::warning('ProcessSaleJob: Sale not found or already processed', ['sale_id' => $this->saleId]);
+            Log::warning('ProcessSaleJob: SALE NOT FOUND OR ALREADY PROCESSED', ['sale_id' => $this->saleId]);
             return;
         }
         // Validação do payload
         if (empty($this->data['items']) || !is_array($this->data['items']) || count($this->data['items']) === 0) {
             $sale->status = Sale::STATUS_FAILED;
             $sale->save();
-            Log::error('ProcessSaleJob: Sale failed - payload inválido', ['sale_id' => $sale->id]);
+            Log::error('ProcessSaleJob: SALE FAILED - PAYLOAD INVÁLIDO', ['sale_id' => $sale->id]);
             return;
         }
         try {
@@ -75,12 +75,12 @@ class ProcessSaleJob implements ShouldQueue
                 $sale->status = Sale::STATUS_COMPLETED;
                 $sale->save();
                 event(new \App\Events\SaleRegistered($sale));
-                Log::info('ProcessSaleJob: Sale processed', ['sale_id' => $sale->id]);
+                Log::info('ProcessSaleJob: SALE PROCESSED', ['sale_id' => $sale->id]);
             });
         } catch (\Exception $e) {
             $sale->status = Sale::STATUS_FAILED;
             $sale->save();
-            Log::error('ProcessSaleJob: Sale failed', ['sale_id' => $sale->id, 'error' => $e->getMessage()]);
+            Log::error('ProcessSaleJob: SALE FAILED', ['sale_id' => $sale->id, 'error' => $e->getMessage()]);
         }
     }
 }
